@@ -208,5 +208,7 @@ public class HazeltaskInstance<GROUP extends Serializable> {
         return hazeltaskInstanceId;
     }
     
-    
+	public IExecutorTopologyService<GROUP> getTopologyService() {
+		return executorTopologyService;
+	}
 }

@@ -12,7 +12,7 @@ public interface ClusterService<GROUP extends Serializable> {
     public Collection<MemberResponse<Map<GROUP, Integer>>> getGroupSizes();  
     public Collection<MemberResponse<Long>> getOldestTaskTimes();
     public Collection<MemberResponse<Integer>> getThreadPoolSizes();
- 
+    
 //    TODO: add this when we can implement a new member router    
 //    /**
 //     * We can use this metric to more efficiently route new tasks... 

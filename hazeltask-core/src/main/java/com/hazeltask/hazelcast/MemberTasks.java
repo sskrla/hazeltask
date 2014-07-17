@@ -1,5 +1,11 @@
 package com.hazeltask.hazelcast;
 
+import static com.hazelcast.nio.SerializationHelper.readObject;
+import static com.hazelcast.nio.SerializationHelper.writeObject;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,6 +24,10 @@ import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.core.MultiTask;
 import com.hazelcast.impl.InnerFutureTask;
+import com.hazelcast.nio.DataSerializable;
+import com.hazelcast.nio.DefaultSerializer;
+import com.hazelcast.nio.IOUtil;
+import com.hazelcast.nio.SerializationHelper;
 
 @Slf4j
 public class MemberTasks {
@@ -135,10 +145,13 @@ public class MemberTasks {
         return null;
     }
     
-    public static class MemberResponseCallable<T> implements Callable<MemberResponse<T>>, Serializable {
+    public static class MemberResponseCallable<T> implements Callable<MemberResponse<T>>, DataSerializable {
         private static final long serialVersionUID = 1L;
         private Callable<T> delegate;
         private Member member;
+        
+        protected MemberResponseCallable() { }
+        
         public MemberResponseCallable(Callable<T> delegate, Member member) {
             this.delegate = delegate;
             this.member = member;
@@ -154,6 +167,19 @@ public class MemberTasks {
         
         public MemberResponse<T> call() throws Exception {
             return new MemberResponse<T>(member, delegate.call());
-        }        
+        }
+
+		@Override
+		public void writeData(DataOutput out) throws IOException {
+			writeObject(out, delegate);
+			writeObject(out, member);
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public void readData(DataInput in) throws IOException {
+			delegate = (Callable<T>) readObject(in);
+			member   = (Member)      readObject(in);
+		}        
     }
 }

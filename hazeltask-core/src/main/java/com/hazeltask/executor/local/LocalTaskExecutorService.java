@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.google.common.base.Predicate;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazeltask.Hazeltask;
 import com.hazeltask.config.ExecutorConfig;
 import com.hazeltask.core.concurrent.NamedThreadFactory;
 import com.hazeltask.core.concurrent.collections.grouped.GroupedPriorityQueueLocking;
@@ -266,6 +267,8 @@ public class LocalTaskExecutorService<G extends Serializable> {
 		}
 	}
 	
+	
+	
 	public Collection<HazeltaskTask<G>> stealTasks(long numberOfTasks) {
 	    if(!this.localExecutorPool.isShutdown()) {
     	    long totalSize = taskQueue.size();
@@ -332,5 +335,12 @@ public class LocalTaskExecutorService<G extends Serializable> {
         //TODO: allow cancelling of inprogress tasks but we need access to the Thread that is running it
         return false;
     }
-
+    
+    /**
+     * Returns a task iterator that represents the state of the queue at, or some time after, its creation.
+     * @return
+     */
+    public Iterator<HazeltaskTask<G>> getQueueIterator() {
+    	return taskQueue.iterator();
+    }
 }

@@ -2,12 +2,15 @@ package com.hazeltask.executor;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.MessageListener;
@@ -17,18 +20,39 @@ import com.hazeltask.hazelcast.MemberTasks.MemberResponse;
 import com.hazeltask.hazelcast.MemberValuePair;
 
 /**
- * Business logic classes use an impl of his class to perform actions across the cluster
+ * Business logic classes use an impl of this class to perform actions across the cluster
  * 
  * 
  * @see HazelcastExecutorTopologyService
  * @author jclawson
- *
+ * @author sskrla
  */
 public interface IExecutorTopologyService<GROUP extends Serializable> {
     //public boolean isMemberReady(Member member);
     
     public void sendTask(HazeltaskTask<GROUP> task, Member member) throws TimeoutException;
     
+    
+    /**
+     * Same as {@link #query(Function, int, TimeUnit)} except a default timeout of 60 seconds will be used.
+     * 
+     * @param fn
+     * @return
+     */
+    public <R> Map<Member, R> query(TaskQuery<R, GROUP> fn);
+    
+    /**
+     * <p>Executes the provided function against each task in the local queues. <tt>Fn</tt> must serializable or an
+     * anonymous class with no references to the enclosing type (closed variables are acceptable as long as they are
+     * also serializable).
+     * 
+     * <p>The function will wait a maximum of <tt>timeout</tt> for all tasks to complete. Nodes that timeout will be
+     * excluded from the result and explicitly canceled.
+     * 
+     * @param fn
+     * @return
+     */
+    public <R> Map<Member, R> query(TaskQuery<R, GROUP> fn, int timeout, TimeUnit unit);
     
     /**
      * 

@@ -1,8 +1,11 @@
 package com.hazeltask.executor;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +24,9 @@ import java.util.concurrent.locks.Lock;
 
 import lombok.extern.slf4j.Slf4j;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableMap;
 import com.hazelcast.config.ExecutorConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
@@ -40,6 +45,7 @@ import com.hazeltask.clusterop.GetLocalGroupQueueSizesOp;
 import com.hazeltask.clusterop.GetLocalQueueSizesOp;
 import com.hazeltask.clusterop.GetOldestTimestampOp;
 import com.hazeltask.clusterop.GetThreadPoolSizesOp;
+import com.hazeltask.clusterop.QueryOp;
 import com.hazeltask.clusterop.StealTasksOp;
 import com.hazeltask.clusterop.SubmitTaskOp;
 import com.hazeltask.config.HazeltaskConfig;
@@ -299,5 +305,26 @@ public class HazelcastExecutorTopologyService<GROUP extends Serializable> implem
                 return true;
         }
         return false;
+    }
+    
+    @Override
+    public <R> Map<Member, R> query(TaskQuery<R, GROUP> fn) {
+    	return query(fn, 60, SECONDS);
+    }
+    
+    @Override
+    public <R> Map<Member, R> query(TaskQuery<R, GROUP> fn, int timeout, TimeUnit unit) {
+    	Collection<MemberResponse<R>> responses = MemberTasks.executeOptimistic(
+            communicationExecutorService, 
+            topology.getReadyMembers(),
+            new QueryOp<R, GROUP>(topology.getName(), fn),
+            timeout,
+            unit);
+    	
+    	ImmutableMap.Builder<Member, R> builder = ImmutableMap.builder();
+    	for(MemberResponse<R> resp: responses)
+    		builder.put(resp.getMember(), resp.getValue());
+    	
+    	return builder.build();
     }
 }
